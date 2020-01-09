@@ -1,4 +1,4 @@
-version: '2' # 版本
+version: '3' # 版本
 services: # 服务
   nginx:  # nginx 服务
     build: # 指定为构建镜像上下文路径
