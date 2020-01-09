@@ -1,0 +1,71 @@
+version: '2' # 版本
+services: # 服务
+  nginx:  # nginx 服务
+    build: # 指定为构建镜像上下文路径
+      context: ./apps/nginx
+      # dockerfile: 指定构建镜像的 Dockerfile 文件命。
+      # args: 添加构建参数，这是只能在构建过程中访问的环境变量。
+      args:
+        NGINX_VERSION: ${NGINX_VERSION}
+      # labels: 设置构建镜像的标签。
+      # target: 多层构建，可以指定构建哪一层。
+    container_name: nginx #指定自定义容器名称，而不是生成的默认名称。
+    ports: # ports: 暴露容器端口到主机的任意端口或指定端口
+      - "80:80"  # 绑定容器的80端口到主机的80端口
+      - "443"    # 绑定容器的443端口到主机的任意端口，容器启动时随机分配绑定的主机端口号
+      # - "9000:8080" # 绑定容器的8080端口到主机的9000端口
+    volumes: # 将主机的数据卷或者文件挂载到容器里
+      - ${SOURCE_DIR}:/www/:rw
+      - ${NGINX_SSL_CERTIFICATE_DIR}:/ssl:rw
+      - ${NGINX_CONFD_DIR}:/etc/nginx/conf.d/:rw
+      - ${NGINX_CONF_FILE}:/etc/nginx/nginx.conf:ro
+      - ${NGINX_FASTCGI_PHP_CONF}:/etc/nginx/fastcgi-php.conf:ro
+      - ${NGINX_FASTCGI_PARAMS}:/etc/nginx/fastcgi_params:ro
+      - ${NGINX_LOG_DIR}:/var/log/nginx/:rw
+    environment: # 添加环境变量，
+      TZ: "${TZ}"
+      WEB_ENV: "dev"
+    restart: always # 容器总是重新启动。
+    networks: # 设置网络模式
+      - default
+  redis:
+    image: redis:${REDIS_VERSION}  # 指定容器运行的镜像 
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ${REDIS_CONF_FILE}:/etc/redis.conf:ro
+      - ${DATA_DIR}/redis:/data/:rw
+    # entrypoint 类似于 CMD 指令，但其不会被 docker run 的命令行参数指定的指令所覆盖  
+    entrypoint: ["redis-server", "/etc/redis.conf"]  # 
+    environment: # 添加环境变量，
+      TZ: "${TZ}"
+    restart: always # 容器总是重新启动。
+    networks: # 设置网络模式
+      - default
+  php:
+    build:
+      context: ./apps/php
+      args:
+        PHP_EXTENSIONS: ${PHP_EXTENSIONS}
+        TZ: "${TZ}" 
+      container_name: php
+      expose:
+        - "9501"
+      extra_hosts: 
+        # 添加主机名映射 以上会在此服务的内部容器中 /etc/hosts 创建一个具有 ip 地址和主机名的映射关系：
+        # 162.242.195.82  somehost
+        - "www.site1.com:172.17.0.1"
+      volumes:
+        - ${SOURCE_DIR}:/www/:rw
+        - ${PHP_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
+        - ${PHP_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
+        - ${PHP_LOG_DIR}:/var/log/php
+        - ${DATA_DIR}/composer:/tmp/composer
+      restart: always
+      cap_add:
+        - SYS_PTRACE
+      networks:
+        - default  
+networks:
+  default:
