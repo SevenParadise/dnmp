@@ -12,8 +12,8 @@ services: # 服务
     container_name: nginx #指定自定义容器名称，而不是生成的默认名称。
     ports: # ports: 暴露容器端口到主机的任意端口或指定端口
       - "80:80"  # 绑定容器的80端口到主机的80端口
-      - "443"    # 绑定容器的443端口到主机的任意端口，容器启动时随机分配绑定的主机端口号
-      # - "9000:8080" # 绑定容器的8080端口到主机的9000端口
+      - "443:443"    # 绑定容器的443端口到主机的任意端口，容器启动时随机分配绑定的主机端口号
+      - "8383:8080" # 绑定容器的8080端口到主机的9000端口
     volumes: # 将主机的数据卷或者文件挂载到容器里
       - ${SOURCE_DIR}:/www/:rw
       - ${NGINX_SSL_CERTIFICATE_DIR}:/ssl:rw
@@ -47,25 +47,40 @@ services: # 服务
     build:
       context: ./apps/php
       args:
+        PHP_VERSION: php:${PHP_VERSION}-fpm-alpine
         PHP_EXTENSIONS: ${PHP_EXTENSIONS}
+        CONTAINER_PACKAGE_URL: ${CONTAINER_PACKAGE_URL}
         TZ: "${TZ}" 
-      container_name: php
-      expose:
-        - "9501"
-      extra_hosts: 
-        # 添加主机名映射 以上会在此服务的内部容器中 /etc/hosts 创建一个具有 ip 地址和主机名的映射关系：
-        # 162.242.195.82  somehost
-        - "www.site1.com:172.17.0.1"
-      volumes:
-        - ${SOURCE_DIR}:/www/:rw
-        - ${PHP_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
-        - ${PHP_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
-        - ${PHP_LOG_DIR}:/var/log/php
-        - ${DATA_DIR}/composer:/tmp/composer
-      restart: always
-      cap_add:
-        - SYS_PTRACE
-      networks:
-        - default  
+    container_name: php
+    expose:
+      - 9501
+    extra_hosts:
+      - "www.site1.com:172.17.0.1"
+    volumes:
+      - ${SOURCE_DIR}:/www/:rw
+      - ${PHP_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
+      - ${PHP_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
+      - ${PHP_LOG_DIR}:/var/log/php
+      - ${DATA_DIR}/composer:/tmp/composer
+    restart: always  # 容器总是重新启动。
+    cap_add:
+      - SYS_PTRACE
+    networks: # 设置网络模式
+      - default
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    container_name: mysql
+    ports:
+      - "${MYSQL_HOST_PORT}:3306"
+    volumes:
+      - ${MYSQL_CONF_FILE}:/etc/mysql/conf.d/mysql.cnf:ro
+      - ${DATA_DIR}/mysql:/var/lib/mysql/:rw
+    restart: always
+    networks:
+      - default
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      TZ: "$TZ"
+
 networks:
   default:
