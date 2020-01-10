@@ -56,6 +56,7 @@ services: # 服务
       - 9501
     extra_hosts:
       - "www.site1.com:172.17.0.1"
+      - ""
     volumes:
       - ${SOURCE_DIR}:/www/:rw
       - ${PHP_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
