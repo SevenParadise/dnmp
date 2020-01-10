@@ -382,16 +382,23 @@ if [[ -z "${EXTENSIONS##*,sqlsrv,*}" ]]; then
     fi
 fi
 
+# if [[ -z "${EXTENSIONS##*,mcrypt,*}" ]]; then
+#     isPhpVersionGreaterOrEqual 7 2
+#     if [[ "$?" = "1" ]]; then
+#         echo "---------- mcrypt was REMOVED from PHP 7.2.0 ----------"
+#     else
+#         echo "---------- Install mcrypt ----------"
+#         apk add --no-cache libmcrypt-dev \
+#         && docker-php-ext-install ${MC} mcrypt
+#     fi
+# fi
+
 if [[ -z "${EXTENSIONS##*,mcrypt,*}" ]]; then
-    isPhpVersionGreaterOrEqual 7 2
-    if [[ "$?" = "1" ]]; then
-        echo "---------- mcrypt was REMOVED from PHP 7.2.0 ----------"
-    else
-        echo "---------- Install mcrypt ----------"
-        apk add --no-cache libmcrypt-dev \
-        && docker-php-ext-install ${MC} mcrypt
-    fi
+    echo "---------- Install mcrypt ----------"
+    apk add --no-cache libmcrypt-dev
+    installExtensionFromTgz mcrypt-1.0.3
 fi
+
 
 if [[ -z "${EXTENSIONS##*,mysql,*}" ]]; then
     isPhpVersionGreaterOrEqual 7 0
