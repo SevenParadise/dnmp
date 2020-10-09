@@ -505,12 +505,37 @@ fi
 
 if [[ -z "${EXTENSIONS##*,swoole,*}" ]]; then
     echo "---------- Install swoole ----------"
+
+    tgzName=swoole-src-4.5.4
+    extensionName=swoole
+
+    mkdir ${extensionName}
+    tar -xf ${tgzName}.tgz -C ${extensionName} --strip-components=1
+    ( cd ${extensionName} && phpize && ./configure --enable-openssl --enable-http2 && make ${MC} && make install )
+
+    docker-php-ext-enable ${extensionName}
+
+fi
+
+if [[ -z "${EXTENSIONS##*,grpc,*}" ]]; then
+    echo "---------- Install grpc ----------"
     isPhpVersionGreaterOrEqual 7 0
 
     if [[ "$?" = "1" ]]; then
-        installExtensionFromTgz swoole-4.4.14
+        installExtensionFromTgz grpc-1.28.0
     else
-        installExtensionFromTgz swoole-2.0.11
+        installExtensionFromTgz grpc-1.28.0
+    fi
+fi
+
+if [[ -z "${EXTENSIONS##*,protobuf,*}" ]]; then
+    echo "---------- Install protobuf ----------"
+    isPhpVersionGreaterOrEqual 7 0
+
+    if [[ "$?" = "1" ]]; then
+        installExtensionFromTgz protobuf-3.11.4
+    else
+        installExtensionFromTgz protobuf-3.11.4
     fi
 fi
 
