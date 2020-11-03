@@ -1,0 +1,5 @@
+if ( $fastcgi_script_name ~ \..*\/.*(php|php5|phtml) ) {
+    return 403;
+}
+fastcgi_pass php:9000;
+fastcgi_split_path_info ^(.+\.php)(/.+)$;

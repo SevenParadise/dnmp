@@ -1,0 +1,5 @@
+rewrite ^/favicon.ico /favicon/favicon.ico last;
+rewrite ^/apple-touch-icon.png /favicon/apple-touch-icon57.png last;
+rewrite ^/apple-touch-icon57.png /favicon/apple-touch-icon57.png last;
+rewrite ^/bdsitemap.txt /bdsitemap/$host/bdsitemap.txt last;
+rewrite ^/robots.txt /robots/$host last;

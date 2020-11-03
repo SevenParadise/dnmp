@@ -10,14 +10,15 @@ services: # 服务
       # labels: 设置构建镜像的标签。
       # target: 多层构建，可以指定构建哪一层。
     container_name: nginx #指定自定义容器名称，而不是生成的默认名称。
-    ports: # ports: 暴露容器端口到主机的任意端口或指定端口
-      - "80:80"  # 绑定容器的80端口到主机的80端口
-      - "443:443"    # 绑定容器的443端口到主机的任意端口，容器启动时随机分配绑定的主机端口号
-      - "8383:8383" # 绑定容器的8080端口到主机的9000端口
+    ports: # ports: 暴露容器端口到主机的任意端口或指定端口  
+      - "80:80"  # HOST:CONTAINER 
+      - "443:443"   # HOST:CONTAINER 
+      - "8383:8383" # HOST:CONTAINER 
     volumes: # 将主机的数据卷或者文件挂载到容器里
       - ${SOURCE_DIR}:/www/:rw
       - ${NGINX_SSL_CERTIFICATE_DIR}:/ssl:rw
       - ${NGINX_CONFD_DIR}:/etc/nginx/conf.d/:rw
+      - ${NGINX_PARAMS_DIR}:/etc/nginx/params/:rw
       - ${NGINX_CONF_FILE}:/etc/nginx/nginx.conf:ro
       - ${NGINX_FASTCGI_PHP_CONF}:/etc/nginx/fastcgi-php.conf:ro
       - ${NGINX_FASTCGI_PARAMS}:/etc/nginx/fastcgi_params:ro
@@ -31,7 +32,7 @@ services: # 服务
   redis:
     image: redis:${REDIS_VERSION}  # 指定容器运行的镜像 
     container_name: redis
-    ports:
+    ports: # HOST:CONTAINER 
       - "6379:6379"
     volumes:
       - ${REDIS_CONF_FILE}:/etc/redis.conf:ro
@@ -59,31 +60,18 @@ services: # 服务
       - "9502:9502"
       - "9503:9503"
       - "8888:8888"
+      - "9601:9601"
+      - "9602:9602"
     environment: # 添加环境变量，
       TZ: "${TZ}"
       WEB_ENV: "local"
     extra_hosts:
-      # MySQL host
-      - "mysql1-test.xinyongfei.io:47.93.8.127"
-      # 内部 host
-      - "test2-easymock.shoufuyou.com:47.93.76.136"
-      - "test-sdk-jd.xinyongfei.cn:60.205.92.80"
-      - "rcs-provider.sfytest3:60.205.92.80"
-      - "fas-http.sfytest3:60.205.92.80"
-      - "test2-sms-system.shoufuyou.com:47.93.76.136"
-      - "rcs-provider-jd-sdk.sfytest3:60.205.92.80"
-      - "bt.jd.com:123.126.36.78"
-      - "qa1-sms-system.xinyongfei.cn:47.93.76.136"
-      - "rcs-provider.xinyongfei.cn:60.205.92.80"
-      - "test1-fund-system.shoufuyou.com:101.201.108.192"
-      - "test1-bill-system.shoufuyou.com:101.201.108.192"
-      - "sequence.sfytest3:60.205.92.80"
-      - "qa3-reporting-system.xinyongfei.cn:47.93.76.136"
-      # 本地项目 host
-      - "dev-pay-mobile.shoufuyou.com:127.0.0.1"
-      #- "dev-api-middleground.xinyongfei.cn:127.0.0.1"
-      # 京东
-      - "test.btgateway.jd.com:123.126.36.78"
+      - "backstage.xinxinapp.cn:10.180.18.22"
+      - "kaluli-01.offline.hupu.com:10.180.18.30"
+      - "www.xinxinapp.cn:10.180.18.22"
+      - "api.xinxinapp.cn:10.180.18.22"
+      - "static.xinxinapp.net:10.180.18.22"
+      - "www.bpisports.com.cn:10.180.18.22"
     volumes:
       - /Users/zhangcs/.ssh/:/root/.ssh:rw
       - ${SOURCE_DIR}:/www/:rw
@@ -91,7 +79,7 @@ services: # 服务
       - ${PHP_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
       - ${PHP_LOG_DIR}:/var/log/php
       - ${DATA_DIR}/composer:/tmp/composer
-      - ./logs/sites:/data/logs
+      - ./logs/sites/bargain:/data0/log-data:rw
     restart: always  # 容器总是重新启动。
     cap_add:
       - SYS_PTRACE
@@ -124,15 +112,78 @@ services: # 服务
       RABBITMQ_DEFAULT_PASS: "${RABBITMQ_DEFAULT_PASS}"
     networks:
       - default
-  consul:
-    image: consul:latest
-    container_name: consul
-    restart: always
-    ports:
-      - "8300:8300"
-      - "8400:8400"
-      - "8500:8500"
-      - "8600:53/udp"  
+  etcd1:
+    image: quay.io/coreos/etcd:latest
+    container_name: etcd1
+    entrypoint: /usr/local/bin/etcd
+    command:
+      - '--name=etcd1'
+      - '--initial-advertise-peer-urls=http://etcd1:2380'
+      - '--listen-peer-urls=http://0.0.0.0:2380'
+      - '--listen-client-urls=http://0.0.0.0:2379'
+      - '--advertise-client-urls=http://etcd1:2379'
+      - '--initial-cluster-token=mys3cr3ttok3n'
+      - '--heartbeat-interval=250'
+      - '--election-timeout=1250'
+      - '--initial-cluster=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380'
+      - '--initial-cluster-state=new'
+    ports: # HOST:CONTAINER 
+      - "2379:2379" 
+    volumes: # 将主机的数据卷或者文件挂载到容器里
+      - /Users/zhangcs/dnmp/data/etcd/etcd1:/etcd_data
+    networks:
+      - default
+  etcd2:
+    container_name: etcd2
+    image: quay.io/coreos/etcd:latest
+    entrypoint: /usr/local/bin/etcd
+    command:
+      - '--name=etcd2'
+      - '--initial-advertise-peer-urls=http://etcd2:2380'
+      - '--listen-peer-urls=http://0.0.0.0:2380'
+      - '--listen-client-urls=http://0.0.0.0:2379'
+      - '--advertise-client-urls=http://etcd2:2379'
+      - '--initial-cluster-token=mys3cr3ttok3n'
+      - '--heartbeat-interval=250'
+      - '--election-timeout=1250'
+      - '--initial-cluster=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380'
+      - '--initial-cluster-state=new'
+    ports: # HOST:CONTAINER 
+      - "22379:2379"
+    volumes:
+      - /Users/zhangcs/dnmp/data/etcd/etcd2:/etcd_data
+    networks:
+      - default  
+  etcd3:
+    container_name: etcd3
+    image: quay.io/coreos/etcd:latest
+    entrypoint: /usr/local/bin/etcd
+    command:
+      - '--name=etcd3'
+      - '--initial-advertise-peer-urls=http://etcd3:2380'
+      - '--listen-peer-urls=http://0.0.0.0:2380'
+      - '--listen-client-urls=http://0.0.0.0:2379'
+      - '--advertise-client-urls=http://etcd3:2379'
+      - '--initial-cluster-token=mys3cr3ttok3n'
+      - '--heartbeat-interval=250'
+      - '--election-timeout=1250'
+      - '--initial-cluster=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380'
+      - '--initial-cluster-state=new'
+    ports: # HOST:CONTAINER 
+      - "32379:2379"
+    volumes:
+      - /Users/zhangcs/dnmp/data/etcd/etcd3:/etcd_data
+    networks:
+      - default
+  etcdkeeper:
+    container_name: "etcdkeeper"
+    image: deltaprojects/etcdkeeper
+    environment:
+      HOST: "0.0.0.0"
+    ports: # HOST:CONTAINER 
+      - 12000:8080
+    depends_on:
+      - etcd1
     networks:
       - default
 networks:

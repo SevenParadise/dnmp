@@ -1,0 +1,6 @@
+set $env '_dev';
+set $root_hc /www/xinxin/xinxin;
+root $root_hc/web;
+location ~ ^/sf($|/) {
+    root $root_hc/data/web;
+}
