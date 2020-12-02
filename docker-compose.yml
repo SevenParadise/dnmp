@@ -130,7 +130,7 @@ services: # 服务
     ports: # HOST:CONTAINER 
       - "2379:2379" 
     volumes: # 将主机的数据卷或者文件挂载到容器里
-      - /Users/zhangcs/dnmp/data/etcd/etcd1:/etcd_data
+      - ./data/etcd/etcd1:/etcd_data
     networks:
       - default
   etcd2:
@@ -151,7 +151,7 @@ services: # 服务
     ports: # HOST:CONTAINER 
       - "22379:2379"
     volumes:
-      - /Users/zhangcs/dnmp/data/etcd/etcd2:/etcd_data
+      - ./data/etcd/etcd2:/etcd_data
     networks:
       - default  
   etcd3:
@@ -172,7 +172,7 @@ services: # 服务
     ports: # HOST:CONTAINER 
       - "32379:2379"
     volumes:
-      - /Users/zhangcs/dnmp/data/etcd/etcd3:/etcd_data
+      - ./data/etcd/etcd3:/etcd_data
     networks:
       - default
   etcdkeeper:
@@ -184,6 +184,48 @@ services: # 服务
       - 12000:8080
     depends_on:
       - etcd1
+    networks:
+      - default
+  apollo:
+    image: zhangcs93/apollo:v1
+    container_name: apollo
+    depends_on:
+      - mysql
+    ports:
+      - "8080:8080"
+      - "8070:8070"
+    volumes:
+      - ./logs/apollo:/service/logs
+    links:
+      - mysql
+    networks:
+      - default  
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.2
+    container_name: es
+    environment:
+      - node.name=es
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    volumes: 
+      - ./data/es:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - default
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.4.2
+    container_name: kibana
+    depends_on:
+      - es
+    volumes:
+      - ./apps/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - 5601:5601
+    links:
+      - es
     networks:
       - default
 networks:
