@@ -213,6 +213,7 @@ services: # 服务
     ports:
       - 9200:9200
       - 9300:9300
+    restart: always 
     networks:
       - default
   kibana:
@@ -226,6 +227,21 @@ services: # 服务
       - 5601:5601
     links:
       - es
+    restart: always
+    networks:
+      - default
+  kibana_local:
+    image: docker.elastic.co/kibana/kibana:7.4.2
+    container_name: kibana_local
+    depends_on:
+      - es
+    volumes:
+      - ./apps/kibana_local/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - 5602:5602
+    links:
+      - es
+    restart: always
     networks:
       - default
 networks:
